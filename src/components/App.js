@@ -18,7 +18,8 @@ const API_URL = 'http://localhost:2000';
 
 //Declare IPFS
 const ipfsClient = require('ipfs-http-client')
-const ipfs = ipfsClient({ host: 'ipfs.infura.io', port: 5001, protocol: 'http', apiPath: '/ipfs/api/v0'}) // leaving out the arguments will default to these values
+const ipfs = ipfsClient({ host: 'ipfs.infura.io', port: 5001, protocol: 'https' }) // leaving out the arguments will default to these values
+
 
 
 class App extends Component {
@@ -71,31 +72,24 @@ class App extends Component {
     }
   }
 
-  captureFile = event => {
+ async captureFile (event) {
 
-    event.preventDefault()
-    const file = event.target.files[0]
-    const reader = new window.FileReader()
-    reader.readAsArrayBuffer(file)
+  event.preventDefault()
+  const file = event.target.files[0]
+  const reader = new window.FileReader()
+  reader.readAsArrayBuffer(file)
 
-    reader.onloadend = () => {
-      this.setState({ buffer: Buffer(reader.result) })
-      console.log('buffer', this.state.buffer)
-    }
-
-    ipfs.add(this.state.buffer, (error, result) => {
-      console.log('Ipfs result', result)
-      if(error) {
-        console.error(error)
-        return
-      }
-
-      this.setState({result:result[0].hash})
-    })
+  reader.onloadend = () => {
+    this.setState({ buffer: Buffer(reader.result) })
+    
   }
 
-  uploadImage = description => {
+  }
+
+  uploadImage = description=>{
+
     console.log("Submitting file to ipfs...")
+
 
     //adding file to the IPFS
     ipfs.add(this.state.buffer, (error, result) => {
@@ -105,46 +99,65 @@ class App extends Component {
         return
       }
 
+      console.log(result)
+
       this.setState({ loading: true })
       this.state.memeMedia.methods.uploadImage(result[0].hash, description).send({ from: this.state.account }).on('transactionHash', (hash) => {
         this.setState({ loading: false })
       })
     })
-
-   
   }
 
+
+
+  // uploadImage = description => {
+  //   console.log("Submitting file to ipfs...")
+
+  //   //adding file to the IPFS
+  //   ipfs.add(this.state.buffer, (error, result) => {
+  //     console.log('Ipfs result', result)
+  //     if(error) {
+  //       console.error(error)
+  //       return
+  //     }
+
+  //     this.setState({ loading: true })
+  //     this.state.memeMedia.methods.uploadImage(result[0].hash, description).send({ from: this.state.account }).on('transactionHash', (hash) => {
+  //       this.setState({ loading: false })
+  //     })
+  //   })
+
+   
+  // }
+
    async createLandRecord(areaCode,length,breadth,address,price) {
-    console.log('buffer', this.state.buffer)
+    // console.log('buffer', this.state.buffer)
 
-    // console.log("adding file to the IPFS")
-    // try{
-    //   ipfs.add(this.state.buffer, (error, result) => {
-    //     console.log('Ipfs result', result)
-    //     if(error) {
-    //       console.error(error)
-    //       return
-    //     }
-    //     //console.log("Success")
-       
-    // this.setState({ loading: true })
-    // this.state.dRealEstate.methods.registerLand(areaCode,length,breadth,address,price,"yyyyyy").send({ from: this.state.account })
-    // .once('receipt', (receipt) => {
-    //   this.setState({ loading: false })
-    // })
     
-      
-    // })
-    // }catch(error)
-    // {
-    //   console.error(error)
-    // }
-
+    try{
+       console.log("adding file to the IPFS")
+       console.log('buffer', this.state.buffer)
+       ipfs.add(this.state.buffer, (error, result) => {
+        console.log('Ipfs result', result)
+        if(error) {
+          console.error(error)
+          return
+        }
+        console.log("Success")
+        console.log(result[0].hash)
+       
     this.setState({ loading: true })
-    this.state.dRealEstate.methods.registerLand(areaCode,length,breadth,address,price,"yyyyyy").send({ from: this.state.account })
+    this.state.dRealEstate.methods.registerLand(areaCode,length,breadth,address,price,result[0].hash).send({ from: this.state.account })
     .once('receipt', (receipt) => {
       this.setState({ loading: false })
     })
+    
+      
+    })
+    }catch(error)
+    {
+      console.error(error)
+    }
     
 
 }
@@ -153,11 +166,13 @@ class App extends Component {
 
 
   buyLand(plotId, price) {
+    
     this.setState({ loading: true })
     this.state.dRealEstate.methods.buyLand(plotId).send({ from: this.state.account, value: price })
     .once('receipt', (receipt) => {
       this.setState({ loading: false })
     })
+    
   }
 
   async buyLandWithoutEther(plotId, price) {
@@ -175,6 +190,7 @@ class App extends Component {
                       price:price
                   }, config)
       console.log(res)
+      window.alert('You have sucessfully bought the land')
      
       
       
@@ -240,6 +256,7 @@ class App extends Component {
       plotcount: 0,
       landrecords: [],
       loading: true,
+      buffer:''
       
     }
     this.verificationStatus={
@@ -255,33 +272,12 @@ class App extends Component {
     this.landNotForSale=this.landNotForSale.bind(this)
     this.landForSale=this.landForSale.bind(this)
     this.captureFile=this.captureFile.bind(this)
+    this.uploadImage=this.uploadImage.bind(this)
     this.buyLandWithoutEther=this.buyLandWithoutEther.bind(this)
   }
 
   render() {
     return (
-      // <div>
-      //   <Navbar account={this.state.account} />
-      //   { this.state.loading
-      //     ? <div id="loader" className="text-center mt-5"><p>Loading...</p></div>
-      //     :  <Landregister
-      //     createLandRecord={this.createLandRecord}/>
-            
-      //   }
-      //   <AllRecords buyLand={this.buyLand} landrecords={this.state.landrecords}/>
-      //   <UserRecords  
-      //   buyLand={this.buyLand} 
-      //   landrecords={this.state.landrecords}
-      //   account={this.state.account}/>
-      //   <Admin 
-      //   landrecords={this.state.landrecords}
-      //   approveLandRecord={this.approveLandRecord}
-      //   rejectLandRecord={this.rejectLandRecord}/>
-
-       
-      // </div>
-
-     // <Landregister createLandRecord={this.createLandRecord} captureFile={this.captureFile} />
       <>
        
       <Router>
@@ -289,10 +285,6 @@ class App extends Component {
        
         <Switch>
           <Route path='/' exact render ={()=> <Landregister createLandRecord={this.createLandRecord} captureFile={this.captureFile} />} />
-          {/* <Route path='/reports' component={Reports} />
-          <Route path='/products' component={Products} />
-          <Route path='/login' component={LoginPage} />
-          <Route path='/enterland' component={EnterRecord} /> */}
           <Route path='/allrecords'render ={()=> <AllRecords buyLand={this.buyLand} buyLandWithoutEther={this.buyLandWithoutEther} landrecords={this.state.landrecords} verificationStatus={this.verificationStatus}/>}/>
           <Route path='/myrecords'render ={()=> <UserRecords landForSale={this.landForSale} landNotForSale={this.landNotForSale} landrecords={this.state.landrecords} account={this.state.account} verificationStatus={this.verificationStatus}/>}/>
           <Route path='/admin'render ={()=> <Admin rejectLandRecord={this.rejectLandRecord} approveLandRecord={this.approveLandRecord} landrecords={this.state.landrecords} account={this.state.account} verificationStatus={this.verificationStatus}/>}/>

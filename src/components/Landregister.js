@@ -63,7 +63,10 @@ export default class Landregister extends Component {
                     placeholder="Enter Price Of Your Land"
                     required />
                 </div>
-                {/* <input type='file' accept="" onChange={this.props.captureFile} /> */}
+                <div className="form-group mr-sm-2" >
+                  <label>Enter the image of the Land</label>
+                 <input type='file' accept="" onChange={this.props.captureFile} />
+                </div>
              
                 <button type="submit" className="btn btn-primary btn-block">Submit</button>
               </form>
